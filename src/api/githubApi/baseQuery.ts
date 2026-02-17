@@ -1,6 +1,7 @@
 import { BaseQueryFn, FetchArgs, fetchBaseQuery, FetchBaseQueryError, FetchBaseQueryMeta } from "@reduxjs/toolkit/query/react";
 import { authActions, clearSavedAuthState } from "../../features/auth/authSlice";
-import { RootState } from '../../app/store'
+import { RootState } from '../../app/store';
+import config from "../../config.json";
 
 const baseQuery = fetchBaseQuery({ 
   baseUrl: "https://api.github.com/",
@@ -8,7 +9,7 @@ const baseQuery = fetchBaseQuery({
     
     const accessToken = (getState() as RootState).auth.accessToken;
     if (accessToken) {
-      headers.append('Authorization', `token ${accessToken}`);
+      headers.append('Authorization', `${config.token_name} ${accessToken}`);
     }
     return headers;
   },

@@ -65,7 +65,7 @@
   "scripts": {
     "prepare": "ln -sf config-local.json src/config.json",
     "prestart": "npx dotenv-cli -e backend-config.env workbook-auth-backend &",
-    "start": "ln -sf config-local.json src/config.json && react-scripts start",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
