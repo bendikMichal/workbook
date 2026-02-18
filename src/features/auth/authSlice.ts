@@ -74,6 +74,7 @@ export const authSlice = createSlice({
     });
     builder.addCase(requestLogout.rejected, (state, action) => {
       state.accessToken = undefined;
+      state.authState = "unauthenticated";
       state.error = action.error.message;
     });
     builder.addMatcher(githubApi.endpoints.usersGetAuthenticated.matchFulfilled,
