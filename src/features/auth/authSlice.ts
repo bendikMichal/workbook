@@ -36,10 +36,10 @@ export const authSlice = createSlice({
     setAccessToken: (state, action: PayloadAction<string | undefined>) => {
       state.accessToken = action.payload;
     },
-    logout: (state) => {
-      state.accessToken = undefined;
-      state.authState = "unauthenticated";
-    }
+    // logout: (state) => {
+    //   state.accessToken = undefined;
+    //   state.authState = "unauthenticated";
+    // }
   },
   extraReducers: (builder) => {
     builder.addCase(requestAccessToken.pending, (state) => {
@@ -54,6 +54,28 @@ export const authSlice = createSlice({
       state.authState = 'unauthenticated';
       state.error = action.error.message;
     });
+    builder.addCase(requestRefreshTokens.pending, (state) => {
+      state.authState = 'authPending';
+    });
+    builder.addCase(requestRefreshTokens.fulfilled, (state, action) => {
+      state.authState = 'authenticated';
+      state.accessToken = action.payload;
+    });
+    builder.addCase(requestRefreshTokens.rejected, (state, action) => {
+      state.authState = 'unauthenticated';
+      state.error = action.error.message;
+    });
+    builder.addCase(requestLogout.pending, (state) => {
+      state.authState = 'authPending';
+    });
+    builder.addCase(requestLogout.fulfilled, (state, action) => {
+      state.accessToken = undefined;
+      state.authState = "unauthenticated";
+    });
+    builder.addCase(requestLogout.rejected, (state, action) => {
+      state.accessToken = undefined;
+      state.error = action.error.message;
+    });
     builder.addMatcher(githubApi.endpoints.usersGetAuthenticated.matchFulfilled,
       (state, { payload }) => {
         state.user = { login: payload.login, avatarUrl: payload.avatar_url }
@@ -65,8 +87,8 @@ export const authSlice = createSlice({
 
 export const requestAccessToken = createAsyncThunk
   <any, string, { state: RootState }>('auth/requestAccessToken', async (code) => {
-    const { authUrl } = config.backend;
-    const response = await fetch(`${authUrl}?code=${encodeURIComponent(code)}`, { method: 'GET', cache: 'reload' });
+    const { baseUrl, authPath } = config.backend;
+    const response = await fetch(`${baseUrl+authPath}?code=${encodeURIComponent(code)}`, { method: 'POST', credentials: "include" });
     const json = await response.json();
     if ('accessToken' in json) {
       return json.accessToken;
@@ -75,6 +97,31 @@ export const requestAccessToken = createAsyncThunk
       throw Error(json.error);
     }
     throw Error('Invalid response from authentication backend');
+  });
+
+export const requestRefreshTokens = createAsyncThunk
+  <any, void, { state: RootState }>('auth/requestRefreshTokens', async () => {
+    const { baseUrl, refreshPath } = config.backend;
+    const response = await fetch(`${baseUrl+refreshPath}`, { method: 'POST', credentials: "include" });
+    const json = await response.json();
+    if ('accessToken' in json) {
+      return json.accessToken;
+    }
+    if ('error' in json) {
+      throw Error(json.error);
+    }
+    throw Error('Invalid response from authentication backend');
+  });
+
+export const requestLogout = createAsyncThunk
+  <any, void, { state: RootState }>('auth/logout', async () => {
+    const { baseUrl, logoutPath } = config.backend;
+    const response = await fetch(`${baseUrl+logoutPath}`, { method: 'POST', credentials: "include" });
+    const json = await response.json();
+    if ('error' in json) {
+      throw Error(json.error);
+    }
+    return true;
   });
 
 function getSavedAccessToken(): string | undefined {
@@ -113,7 +160,7 @@ export const logout = () => {
   }
 }
 
-export const authActions = { requestAccessToken, ...authSlice.actions };
+export const authActions = { requestAccessToken, requestRefreshTokens, logout: requestLogout, ...authSlice.actions };
 export const authSelectors = {
   authState: (state: RootState) => state.auth.authState,
   accessToken: (state: RootState) => state.auth.accessToken,

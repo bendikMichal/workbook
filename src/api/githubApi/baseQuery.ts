@@ -30,6 +30,7 @@ const baseQuery = fetchBaseQuery({
   if (result.error && result.error.status === 401) {
     clearSavedAuthState();
     api.dispatch(authActions.setAuthState('tokenExpired'));
+    api.dispatch(authActions.requestRefreshTokens());
   }
   return result;
 };
