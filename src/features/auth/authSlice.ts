@@ -59,6 +59,7 @@ export const authSlice = createSlice({
     });
     builder.addCase(requestRefreshTokens.fulfilled, (state, action) => {
       state.authState = 'authenticated';
+      state.tokenState = 'tokenTested';
       state.accessToken = action.payload;
     });
     builder.addCase(requestRefreshTokens.rejected, (state, action) => {
@@ -100,17 +101,33 @@ export const requestAccessToken = createAsyncThunk
     throw Error('Invalid response from authentication backend');
   });
 
+let refreshPromise: any = null;
 export const requestRefreshTokens = createAsyncThunk
   <any, void, { state: RootState }>('auth/requestRefreshTokens', async () => {
-    const { baseUrl, refreshPath } = config.backend;
-    const response = await fetch(`${baseUrl+refreshPath}`, { method: 'POST', credentials: "include" });
-    const json = await response.json();
-    if ('accessToken' in json) {
-      return json.accessToken;
+    if (refreshPromise !== null) return await refreshPromise;
+
+    try {
+      const { baseUrl, refreshPath } = config.backend;
+      refreshPromise = fetch(`${baseUrl+refreshPath}`, { method: 'POST', credentials: "include" });
+      const response = await refreshPromise;
+      const json = await response.json();
+
+      if ('accessToken' in json) {
+        refreshPromise = null;
+        return json.accessToken;
+      }
+      if ('error' in json) {
+        throw Error(json.error);
+      }
     }
-    if ('error' in json) {
-      throw Error(json.error);
+    catch (e) {
+      refreshPromise = null;
+      throw e;
     }
+    finally {
+      refreshPromise = null;
+    }
+
     throw Error('Invalid response from authentication backend');
   });
 

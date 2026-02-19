@@ -1,7 +1,5 @@
 import { createApi } from '@reduxjs/toolkit/query/react'
-import { graphqlRequestBaseQuery } from '@rtk-query/graphql-request-base-query'
-import { RootState } from '../../../app/store';
-import config from "../../../config.json";
+import graphqlBaseQuery from './baseQuery'
 
 interface ListExercisesReposResponse {
   viewer: {
@@ -26,16 +24,7 @@ interface ListExercisesReposResponse {
 }
 
 export const githubGqlApi = createApi({
-  baseQuery: graphqlRequestBaseQuery({
-    url: 'https://api.github.com/graphql',
-    prepareHeaders: (headers, api) => {
-      const accessToken = (api.getState() as RootState).auth.accessToken;
-      if (accessToken) {
-        headers.append('Authorization', `${config.token_name} ${accessToken}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: graphqlBaseQuery,
   endpoints: (builder) => ({
     listExercisesRepos: builder.query<
     ListExercisesReposResponse,
